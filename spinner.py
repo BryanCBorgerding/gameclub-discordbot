@@ -2,6 +2,7 @@
 import argparse
 import os
 import sqlite3
+import json
 
 class wheelSpin:
     """
@@ -25,7 +26,48 @@ class wheelSpin:
     def initDB(self,path):
         if self.Verbose:
             print(f"Filepath is '{path}'")
-        return
+        if os.path.isfile(path):
+            if self.Verbose:
+                print("Database already exists!")
+            # if file exists, should return
+            return True
+        else:
+            if self.Verbose:
+                print(f"Database not found, creating new database at {path}!")
+            # Need to create the database at that location
+            query1 = f"""
+            CREATE TABLE Pool (
+	        id INTEGER PRIMARY KEY AUTOINCREMENT,
+	        Player TEXT
+            );
+            """
+            query2 = f"""
+            CREATE TABLE Blacklist (
+	        id INTEGER PRIMARY KEY AUTOINCREMENT,
+	        Player TEXT
+            );
+            """
+            with sqlite3.connect(path) as conn:
+                conn.execute(query1)
+                conn.execute(query2)
+            
+            # Read in default player list from a JSON Config
+            default = self.readConfig("config.json")
+            if default ==  False:
+                # No config found, pass
+                if self.Verbose:
+                    print("No configuration file found: Tables will be empty!")
+                return
+            else:
+                return
+    """
+    Checks for a config file, if present, it uses it to populate the database, if not returns a false
+    """
+    def readConfig(self,path):
+        if os.path.isfile(path):
+            return
+        else:
+            return False
 
     """
     Checks the database for every player in the pool
