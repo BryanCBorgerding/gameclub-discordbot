@@ -3,6 +3,7 @@ import argparse
 import os
 import sqlite3
 import json
+import random
 
 class wheelSpin:
     """
@@ -103,8 +104,7 @@ class wheelSpin:
         SELECT * FROM Pool;
         """
         data = self._qsql(query,read=True)
-        print(data)
-        return
+        return data
     
     """
     Checks the database for every player in the blacklist.
@@ -115,8 +115,7 @@ class wheelSpin:
         SELECT * FROM Blacklist; 
         """
         data = self._qsql(query,read=True)
-        print(data)
-        return
+        return data
     
     """
     API to add a person to the pool
@@ -160,9 +159,50 @@ class wheelSpin:
     """
     API to spin the wheel and select a player
     """
-    def spinTheWheel():
-        #TODO Pull from Pool and Blacklist. Compare two and remove any matches. Roll a number between 1 and number of remaining players. Print result 
-        return
+    def spinTheWheel(self):
+        #TODO Pull from Pool and Blacklist. Compare two and remove any matches. Roll a number between 1 and number of remaining players. Print result
+        # Get pool from db
+        pool = self.checkPool()
+        # process it a bit
+        pool = [name for _, name in pool]
+        if self.Verbose:
+            print(f"Current entries in pool: {pool}")
+        # Get blacklist from db
+        bl = self.checkBlacklist()
+        # process it a bit
+        bl = [name for _, name in bl]
+        if self.Verbose:
+            print(f"Current entries in blacklist: {bl}")
+        # do the comparison
+        Entrants = [name for name in pool if name not in bl]
+        if self.Verbose:
+            print(f"And the entrants are... {Entrants}")
+        length = len(Entrants)
+        if length == 0:
+            # Pool is empty for some reason...
+            print("Error: Number of Entrants is zero... Please add players to the pool")
+            return
+        rand = random.randint(0, length-1)
+        if self.Verbose:
+            print(f"Random number selection result: {rand}")
+        win = Entrants[rand]
+        if self.Verbose:
+            print(f"And the winner is... {win}!")
+        # Now, need to add winner to blacklist
+        if self.Verbose:
+            print(f"Adding {win} to the blacklist")
+        bl.append(win)
+        # Check if blacklist is equal to the pool
+        if set(pool) == set(bl):
+            # Empty the blacklist
+            if self.Verbose:
+                print("Blacklist is full! Everyone has had a turn, so let's reset to zero...")
+            for i in range(len(bl)):
+                self.clearFromBlacklist(bl[i])
+        else:
+            # push new entry to database
+            self.add2Blacklist(win)
+        return win
 
 
 def main():
@@ -172,11 +212,13 @@ def main():
         wheel = wheelSpin(PATH,Verbose=True)
     else:
         wheel = wheelSpin(PATH)
+    if not args.function:
+        return
     match args.function[0]:
         case "checkPool":
-            wheel.checkPool()
+            print(wheel.checkPool())
         case "checkBlacklist":
-            wheel.checkBlacklist()
+            print(wheel.checkBlacklist())
         case "addPlayer":
             wheel.addPlayer(args.function[1])
         case "addBlacklist":
@@ -186,9 +228,10 @@ def main():
         case "dropBlacklist":
             wheel.clearFromBlacklist(args.function[1])
         case "spin":
-            wheel.spinTheWheel()
+            winner = wheel.spinTheWheel()
+            print(f"And the winner is... {winner}!")
         case _:
-            pass
+            print("Invalid command!")
     return
 
 def initParser():
