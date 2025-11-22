@@ -54,13 +54,14 @@ class wheelSpin:
             self._qsql(query2)       
             # Read in default player list from a JSON Config
             default = self._readConfig("config.json")
-            default = default['DefaultPlayers']
             if default ==  False:
                 # No config found, pass
                 if self.Verbose:
                     print("No configuration file found: Tables will be empty!")
                 return
+            
             else:
+                default = default['DefaultPlayers']
                 if self.Verbose:
                     print(f'Adding {default} to the pool!')
                 for i in range(len(default)):
