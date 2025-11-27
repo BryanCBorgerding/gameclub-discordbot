@@ -175,3 +175,6 @@ cython_debug/
 
 # JSON configuration file
 .json
+
+# Text Files
+.txt
