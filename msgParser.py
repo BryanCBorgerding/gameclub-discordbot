@@ -8,6 +8,9 @@ import random
 class messageConstructor():
     Verbose = False
     databasePath = None
+    msgDefault = [
+        "And the Winner is... '$USER'"
+    ]
 
     def __init__(self, PATH, Verbose = False):
         if Verbose:
@@ -82,6 +85,13 @@ class messageConstructor():
         else:
             return False
 
+    def printDB(self):
+        query = f"""
+        SELECT * FROM UserID;
+        """
+        data = self._qsql(query,read=True)
+        return data
+
     def findUserID(self, User):
         try:
             query = f"""
@@ -94,6 +104,8 @@ class messageConstructor():
             return False
     
     def addUserID(self, User, ID):
+        if self.Verbose:
+            print(f"Adding {User} to the database with ID {ID}")
         query = f"""
         INSERT INTO UserID (Player, DiscordID) VALUES ('{User}','{ID}');
         """
@@ -101,13 +113,42 @@ class messageConstructor():
         return
     
     def removeUserID(self, User):
+        if self.Verbose:
+            print(f"Removing {User} from the Database!")
+        query = f"""
+        DELETE FROM UserID WHERE Player = '{User}';
+        """
+        self._qsql(query)
         return
+
+    def _readMessages(self):
+        conf = self._readConfig("config.json")
+        if conf ==  False:
+                # No config found, pass
+                if self.Verbose:
+                    print("No configuration file found! will use the default message")
+                return self.msgDefault
+        try:
+            messages = conf["CustomMessages"]
+            return messages
+        except Exception as e:
+            if self.Verbose:
+                print("No messages found in the configuration file, will use the default message")
+            return self.msgDefault
+            
+
 
     def randomMessage(self):
-        return
+        # Custom messages are not stored in any database, they will be pulled from config.json during runtime!
+        messages = self._readMessages()
+        length = len(messages)
+        rand = random.randint(0, length-1)
+        return messages[rand]
 
-    def constructMessage(self):
-        return
+    def constructMessage(self, User):
+        message = self.randomMessage()
+        newMessage = message.replace("'$USER'", User)
+        return newMessage
 
     
 
@@ -121,12 +162,18 @@ def main():
     if not args.function:
         return
     match args.function[0]:
+        case "printDB":
+            print(msg.printDB())
         case "findUser":
             data = msg.findUserID(args.function[1])
             if data != False:
                 print(data)
         case "addUser":
             msg.addUserID(args.function[1],args.function[2])
+        case "removeUser":
+            msg.removeUserID(args.function[1])
+        case "randMessage":
+            print(msg.randomMessage())
     return
 
 

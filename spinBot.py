@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from spinner import wheelSpin
+from msgParser import messageConstructor
 import os
 import argparse
 
@@ -12,8 +13,10 @@ args = parser.parse_args()
 if args.test:
     print("Running in test/debug mode!")
     dbPath = "./testDB"
+    msgPath = "./msgTestDB"
 else:
     dbPath = "./spinDB"
+    msgPath = "./msgDB"
 
 # Outside of application: Need to Define an environment variable with name SPINBOT_TOKEN that has a value of the bot token given by discord 
 TOKEN_NAME = "SPINBOT_TOKEN"
@@ -44,20 +47,22 @@ async def help(ctx):
     for key, value in cmdlist.items():
         await ctx.send(f"{key} : {value}")
 
-
 @GameClub.command()
 async def spin(ctx):
     result = wheel.spinTheWheel()
-    await ctx.send(f"And the winner is... {result}!")
-
-@GameClub.command()
-async def test(ctx):
-    user_id = 196423570874695690
-    user = await bot.fetch_user(user_id)
-    await ctx.send(f"{user.mention} is about to make us play some cringe shit!")
+    userID = msg.findUserID(result)
+    if userID == False:
+        user = result
+        winner = result
+    else:
+        user = await bot.fetch_user(userID)
+        winner = user.mention
+    message = msg.constructMessage(winner)
+    await ctx.send(message)
 
 token = os.getenv(TOKEN_NAME)
 if not token:
     raise ValueError(f"{TOKEN_NAME} is not set in environment! please export a valid token")
-wheel = wheelSpin(dbPath, Verbose= False)
+wheel = wheelSpin(dbPath, Verbose = False)
+msg = messageConstructor(msgPath, Verbose= False)
 bot.run(token)
